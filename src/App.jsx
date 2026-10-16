@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
+import LeaveCalendarDays from './LeaveCalendarDays'
 import SidebarNavigation from './SidebarNavigation'
 import RemoteAsBoard from './RemoteAsBoard'
 import { WorkEntriesEditor, WorkEntriesRead } from './WorkEntries'
@@ -478,6 +479,8 @@ useEffect(() => {
     requests: [],
   })
   const [leaveCalendar, setLeaveCalendar] = useState([])
+  const leaveLoadVersion = useRef(0)
+  const [leaveCalendarStatus, setLeaveCalendarStatus] = useState('loading')
   const [pendingLeaveRequests, setPendingLeaveRequests] = useState([])
   const [newLeave, setNewLeave] = useState({
     startDate: '',
@@ -1265,6 +1268,8 @@ useEffect(() => {
     year = leaveYear,
     month = leaveMonth
   ) => {
+    const version = ++leaveLoadVersion.current
+    setLeaveCalendarStatus('loading')
     try {
       const [
         summaryResponse,
@@ -1290,12 +1295,18 @@ useEffect(() => {
       const calendar = await calendarResponse.json()
       const pending = await pendingResponse.json()
 
+      if (version !== leaveLoadVersion.current) return false
       setLeaveSummary(summary)
       setLeaveCalendar(calendar)
       setPendingLeaveRequests(pending)
+      setLeaveCalendarStatus('ready')
+      return true
     } catch (error) {
+      if (version !== leaveLoadVersion.current) return false
+      setLeaveCalendarStatus('error')
       console.error(error)
       alert('연차 정보를 불러오지 못했습니다.')
+      return false
     }
   }
 
@@ -5160,8 +5171,10 @@ useEffect(() => {
         reason: '',
       })
 
-      await loadLeaveData()
-      alert('연차 신청이 등록되었습니다. 나머지 직원 전원이 동의하면 캘린더에 자동 반영됩니다.')
+      const refreshed = await loadLeaveData()
+      alert(refreshed
+        ? '연차 신청이 등록되었습니다. 나머지 직원 전원이 동의하면 캘린더에 자동 반영됩니다.'
+        : '연차 등록은 서버에서 완료했으나 목록을 새로 불러오지 못했습니다. 다시 등록하지 말고 조회를 재시도해 주세요.')
     } catch (error) {
       console.error(error)
       alert(`연차 등록에 실패했습니다.\n${error.message}`)
@@ -5228,8 +5241,8 @@ useEffect(() => {
       }
 
       setEditingLeave(null)
-      await loadLeaveData()
-      alert('연차가 수정되었습니다.')
+      const refreshed = await loadLeaveData()
+      alert(refreshed ? '연차가 수정되었습니다.' : '수정은 서버에서 완료했으나 목록 갱신에 실패했습니다. 조회를 재시도해 주세요.')
     } catch (error) {
       console.error(error)
       alert(`연차 수정에 실패했습니다.\n${error.message}`)
@@ -5254,9 +5267,11 @@ useEffect(() => {
         throw new Error(data.error || '연차 동의 실패')
       }
 
-      await loadLeaveData()
+      const refreshed = await loadLeaveData()
 
-      if (data.status === 'APPROVED') {
+      if (!refreshed) {
+        alert('동의는 서버에서 완료했으나 목록 갱신에 실패했습니다. 조회를 재시도해 주세요.')
+      } else if (data.status === 'APPROVED') {
         alert('마지막 동의가 완료되어 연차가 승인되고 캘린더에 반영되었습니다.')
       } else {
         alert('동의가 완료되었습니다.')
@@ -6643,7 +6658,7 @@ useEffect(() => {
       </aside>
 
 
-      <main className="main-content">
+      <main className={`main-content${page === 'leave' ? ' leave-page' : ''}`}>
 
         <style>{`
           @media (max-width: 900px) {
@@ -13395,49 +13410,15 @@ useEffect(() => {
                 </div>
               </div>
 
-              <div className="leave-calendar">
-                {['일', '월', '화', '수', '목', '금', '토'].map(
-                  (day) => (
-                    <div
-                      className="leave-calendar-head"
-                      key={day}
-                    >
-                      {day}
-                    </div>
-                  )
-                )}
-
-                {getCalendarCells().map((date, index) => (
-                  <div
-                    className={`leave-calendar-cell ${
-                      !date ? 'empty' : ''
-                    }`}
-                    key={`${leaveYear}-${leaveMonth}-${index}`}
-                  >
-                    {date && (
-                      <>
-                        <div className="leave-calendar-date">
-                          {date.getDate()}
-                        </div>
-
-                        <div className="leave-calendar-items">
-                          {getLeavesForDate(date).map((item) => (
-                            <div
-                              className="leave-calendar-item"
-                              key={`${item.id}-${date.getDate()}`}
-                            >
-                              <strong>
-                                {item.user?.name || '직원'}
-                              </strong>
-                              <span>{item.leaveType}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <LeaveCalendarDays
+                key={`${leaveYear}-${leaveMonth}`}
+                year={leaveYear}
+                month={leaveMonth}
+                cells={getCalendarCells()}
+                getLeavesForDate={getLeavesForDate}
+                status={leaveCalendarStatus}
+                onRetry={() => loadLeaveData()}
+              />
             </div>
           </>
         )}
