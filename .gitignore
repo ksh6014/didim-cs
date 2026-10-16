@@ -1,0 +1,61 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local credentials, runtime state and company data
+.env
+.env.*
+!.env.example
+.deploy-token
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+uploads/
+generated/
+deployment/
+release/
+public/downloads/
+.server.pid
+.deploy-agent.pid
+*.pid
+inst_user_settings.tmp
+
+# Local tools and unrelated analysis; Android packaging is outside this change
+.android-sdk/
+.android-tools/
+android-app/
+_analysis/
+.agents/
+.claude/
+.cursor/
+.devin/
+
+# Local account-maintenance utilities are not part of the application baseline
+server/reset-all-logins.ts
+server/reset-master.ts
+server/seed-team-users.ts
+server/index.js

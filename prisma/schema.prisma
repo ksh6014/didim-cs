@@ -1,0 +1,675 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  name         String
+  department   String?
+  position     String?
+  phone        String?
+  email        String?
+  role         String   @default("USER")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastLoginAt  DateTime?
+
+  assignedSites UserSite[]
+  histories     SiteHistory[]
+  uploadedFiles File[]
+  notices       Notice[]
+  photos        SitePhoto[]
+  leaveBalances    LeaveBalance[]
+  leaveRequests    LeaveRequest[]
+  leaveAgreements  LeaveAgreement[]
+  workLogs         WorkLog[]
+  workLogComments  WorkLogComment[]
+  manualsCreated       Manual[]
+  inventoryTransactions InventoryTransaction[]
+  serviceRequestsCreated ServiceRequest[] @relation("ServiceRequestCreator")
+  serviceAssignments     ServiceAssignee[]
+  serviceActivities      ServiceActivity[]
+  checklistTemplates     ChecklistTemplate[]
+  serviceChecklistChecks ServiceChecklistItem[]
+  siteChecklistChecks    SiteChecklistItem[]
+  notifications          Notification[]
+  serviceAcknowledgements ServiceRequest[] @relation("ServiceRequestAcknowledger")
+}
+
+model Site {
+  id            Int       @id @default(autoincrement())
+  name          String
+  region        String?
+  area          String?
+  address       String
+  customerName  String?
+  customerPhone String?
+  installDate   DateTime?
+  status        String    @default("설치 예정")
+  equipment     String?
+  memo          String?
+  extraData     Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  managers  UserSite[]
+  histories SiteHistory[]
+  photos    SitePhoto[]
+  siteFiles SiteFile[]
+  workLogs              WorkLogSite[]
+  inventoryTransactions InventoryTransaction[]
+  serviceRequests        ServiceRequest[]
+  assets                 SiteAsset[]
+  installChecklistItems  SiteChecklistItem[]
+
+  @@index([name])
+  @@index([region])
+  @@index([status])
+  @@index([installDate])
+}
+
+model UserSite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  siteId    Int
+  role      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, siteId])
+  @@index([userId])
+  @@index([siteId])
+}
+
+model SiteHistory {
+  id        Int      @id @default(autoincrement())
+  siteId    Int
+  userId    Int?
+  type      String?
+  title     String
+  content   String?
+  createdAt DateTime @default(now())
+
+  site Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([siteId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model File {
+  id           Int      @id @default(autoincrement())
+  category     String?
+  originalName String
+  storedName   String
+  storagePath  String
+  mimeType     String?
+  size         Int?
+  description  String?
+  uploadedById Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  uploadedBy User?      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  siteFiles    SiteFile[]
+  workLogFiles WorkLogFile[]
+  serviceFiles ServiceFile[]
+
+  @@index([category])
+  @@index([uploadedById])
+  @@index([createdAt])
+}
+
+model SiteFile {
+  id        Int      @id @default(autoincrement())
+  siteId    Int
+  fileId    Int
+  createdAt DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, fileId])
+  @@index([siteId])
+  @@index([fileId])
+}
+
+model SitePhoto {
+  id           Int      @id @default(autoincrement())
+  siteId       Int
+  uploadedById Int?
+  originalName String?
+  storedName   String
+  storagePath  String
+  caption      String?
+  photoType    String?
+  createdAt    DateTime @default(now())
+
+  site       Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  uploadedBy User? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([siteId])
+  @@index([uploadedById])
+  @@index([createdAt])
+}
+
+model Notice {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  isPinned  Boolean  @default(false)
+  authorId  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([isPinned])
+}
+
+model LeaveBalance {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  year        Int
+  grantedDays Float    @default(15)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year])
+  @@index([userId])
+  @@index([year])
+}
+
+model LeaveRequest {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  startDate DateTime
+  endDate   DateTime
+  days      Float
+  leaveType String   @default("연차")
+  status    String   @default("PENDING")
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agreements LeaveAgreement[]
+
+  @@index([userId])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([status])
+}
+
+
+model LeaveAgreement {
+  id             Int      @id @default(autoincrement())
+  leaveRequestId Int
+  approverId     Int
+  status         String   @default("PENDING")
+  agreedAt       DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  leaveRequest LeaveRequest @relation(fields: [leaveRequestId], references: [id], onDelete: Cascade)
+  approver     User         @relation(fields: [approverId], references: [id], onDelete: Cascade)
+
+  @@unique([leaveRequestId, approverId])
+  @@index([leaveRequestId])
+  @@index([approverId])
+  @@index([status])
+}
+
+
+model WorkLog {
+  id            Int      @id @default(autoincrement())
+  authorId      Int
+  workDate      DateTime
+  title         String?
+  completedWork String?
+  pendingWork   String?
+  nextPlan      String?
+  issues        String?
+  handover      String?
+  memo          String?
+  status        String   @default("DRAFT")
+  isImportant   Boolean  @default(false)
+  extraData     Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  author           User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  sites            WorkLogSite[]
+  files            WorkLogFile[]
+  comments         WorkLogComment[]
+  manualCandidates ManualCandidate[]
+  materials        WorkLogMaterial[]
+  inventoryTransactions InventoryTransaction[]
+  serviceRequest ServiceRequest?
+
+  @@index([authorId])
+  @@index([workDate])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model WorkLogSite {
+  id        Int      @id @default(autoincrement())
+  workLogId Int
+  siteId    Int
+  createdAt DateTime @default(now())
+
+  workLog WorkLog @relation(fields: [workLogId], references: [id], onDelete: Cascade)
+  site    Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([workLogId, siteId])
+  @@index([workLogId])
+  @@index([siteId])
+}
+
+model WorkLogFile {
+  id        Int      @id @default(autoincrement())
+  workLogId Int
+  fileId    Int
+  createdAt DateTime @default(now())
+
+  workLog WorkLog @relation(fields: [workLogId], references: [id], onDelete: Cascade)
+  file    File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([workLogId, fileId])
+  @@index([workLogId])
+  @@index([fileId])
+}
+
+model WorkLogComment {
+  id        Int      @id @default(autoincrement())
+  workLogId Int
+  authorId  Int
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workLog WorkLog @relation(fields: [workLogId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([workLogId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model ManualCandidate {
+  id        Int      @id @default(autoincrement())
+  workLogId Int
+  title     String
+  content   String?
+  status    String   @default("CANDIDATE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workLog WorkLog @relation(fields: [workLogId], references: [id], onDelete: Cascade)
+  manual  Manual?
+
+  @@index([workLogId])
+  @@index([status])
+}
+
+model Manual {
+  id                Int      @id @default(autoincrement())
+  title             String
+  content           String?
+  category          String   @default("기타")
+  status            String   @default("ACTIVE")
+  sourceCandidateId Int?     @unique
+  createdById       Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  sourceCandidate ManualCandidate? @relation(fields: [sourceCandidateId], references: [id], onDelete: SetNull)
+  createdBy       User             @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([category])
+  @@index([status])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+
+model InventoryItem {
+  id           Int      @id @default(autoincrement())
+  code         String?  @unique
+  name         String
+  category     String   @default("기타")
+  unit         String   @default("개")
+  currentStock Int      @default(0)
+  minStock     Int      @default(0)
+  location     String?
+  memo         String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workLogMaterials WorkLogMaterial[]
+  transactions     InventoryTransaction[]
+
+  @@index([name])
+  @@index([category])
+  @@index([isActive])
+}
+
+model WorkLogMaterial {
+  id          Int      @id @default(autoincrement())
+  workLogId   Int
+  itemId      Int
+  quantity    Int
+  usageType   String   @default("AS교체")
+  deducted    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workLog WorkLog       @relation(fields: [workLogId], references: [id], onDelete: Cascade)
+  item    InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([workLogId, itemId])
+  @@index([workLogId])
+  @@index([itemId])
+}
+
+model InventoryTransaction {
+  id          Int      @id @default(autoincrement())
+  itemId      Int
+  userId      Int?
+  siteId      Int?
+  workLogId   Int?
+  type        String
+  quantity    Int
+  balanceAfter Int
+  reason      String?
+  usageType   String?
+  createdAt   DateTime @default(now())
+
+  item    InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  user    User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  site    Site?         @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  workLog WorkLog?      @relation(fields: [workLogId], references: [id], onDelete: SetNull)
+
+  @@index([itemId])
+  @@index([userId])
+  @@index([siteId])
+  @@index([workLogId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+
+model ServiceRequest {
+  id             Int      @id @default(autoincrement())
+  siteId         Int
+  createdById    Int
+  receivedDate   DateTime
+  visitDate      DateTime?
+  requestContent String
+  requestType    String   @default("방문A/S")
+  intakeChannel  String   @default("전화")
+  customerName   String?
+  priority       String   @default("일반")
+  resolution     String?
+  contact        String?
+  billingType    String   @default("무상")
+  billingAmount  Int      @default(0)
+  status         String   @default("접수")
+  memo           String?
+  completedAt    DateTime?
+  workLogId      Int?     @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  isAfterHours   Boolean  @default(false)
+  acknowledgedAt DateTime?
+  acknowledgedById Int?
+
+  site           Site                   @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  createdBy      User                   @relation("ServiceRequestCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  acknowledgedBy User?                  @relation("ServiceRequestAcknowledger", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+  assignees      ServiceAssignee[]
+  workLog        WorkLog?               @relation(fields: [workLogId], references: [id], onDelete: SetNull)
+  files          ServiceFile[]
+  activities     ServiceActivity[]
+  checklistItems ServiceChecklistItem[]
+
+  @@index([siteId])
+  @@index([createdById])
+  @@index([receivedDate])
+  @@index([visitDate])
+  @@index([status])
+  @@index([billingType])
+  @@index([requestType])
+  @@index([intakeChannel])
+  @@index([priority])
+  @@index([isAfterHours])
+  @@index([acknowledgedAt])
+}
+
+model AsOperatingSetting {
+  id          Int      @id @default(1)
+  startTime   String   @default("09:00")
+  endTime     String   @default("18:00")
+  workingDays Json     @default("[1,2,3,4,5]")
+  holidays    Json     @default("[]")
+  updatedAt   DateTime @updatedAt
+}
+
+model ServiceAssignee {
+  id               Int      @id @default(autoincrement())
+  serviceRequestId Int
+  userId           Int
+  createdAt        DateTime @default(now())
+
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceRequestId, userId])
+  @@index([serviceRequestId])
+  @@index([userId])
+}
+
+
+model SystemOption {
+  id         Int      @id @default(autoincrement())
+  groupKey   String
+  groupLabel String
+  value      String
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  isLocked   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([groupKey, value])
+  @@index([groupKey])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+
+model SystemOptionGroup {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  label     String
+  isSystem  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+
+model SiteAsset {
+  id           Int      @id @default(autoincrement())
+  siteId       Int
+  assetCode    String   @unique
+  assetType    String
+  model        String?
+  serialNumber String?
+  quantity     Int      @default(1)
+  installedAt  DateTime?
+  status       String   @default("사용중")
+  location     String?
+  memo         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([assetType])
+  @@index([status])
+  @@index([installedAt])
+}
+
+model ServiceFile {
+  id               Int      @id @default(autoincrement())
+  serviceRequestId Int
+  fileId           Int
+  kind             String   @default("파일")
+  createdAt        DateTime @default(now())
+
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  file           File           @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceRequestId, fileId])
+  @@index([serviceRequestId])
+  @@index([fileId])
+  @@index([kind])
+}
+
+model ServiceActivity {
+  id               Int      @id @default(autoincrement())
+  serviceRequestId Int
+  userId           Int?
+  type             String   @default("NOTE")
+  title            String
+  content          String?
+  createdAt        DateTime @default(now())
+
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([serviceRequestId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model ChecklistTemplate {
+  id          Int      @id @default(autoincrement())
+  name        String
+  workType    String   @default("SERVICE")
+  isActive    Boolean  @default(true)
+  createdById Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User?                   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  items     ChecklistTemplateItem[]
+
+  @@index([workType])
+  @@index([isActive])
+  @@index([createdById])
+}
+
+model ChecklistTemplateItem {
+  id         Int      @id @default(autoincrement())
+  templateId Int
+  label      String
+  sortOrder  Int      @default(0)
+  required   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([sortOrder])
+}
+
+model ServiceChecklistItem {
+  id               Int       @id @default(autoincrement())
+  serviceRequestId Int
+  label            String
+  sortOrder        Int       @default(0)
+  required         Boolean   @default(true)
+  checked          Boolean   @default(false)
+  note             String?
+  checkedById      Int?
+  checkedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  checkedBy      User?          @relation(fields: [checkedById], references: [id], onDelete: SetNull)
+
+  @@index([serviceRequestId])
+  @@index([checked])
+  @@index([sortOrder])
+}
+
+model SiteChecklistItem {
+  id          Int       @id @default(autoincrement())
+  siteId      Int
+  label       String
+  sortOrder   Int       @default(0)
+  required    Boolean   @default(true)
+  checked     Boolean   @default(false)
+  note        String?
+  checkedById Int?
+  checkedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  site      Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  checkedBy User? @relation(fields: [checkedById], references: [id], onDelete: SetNull)
+
+  @@index([siteId])
+  @@index([checked])
+  @@index([sortOrder])
+}
+
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  eventKey   String
+  type       String
+  level      String    @default("info")
+  title      String
+  message    String
+  targetType String?
+  targetId   Int?
+  source     String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventKey])
+  @@index([userId])
+  @@index([readAt])
+  @@index([createdAt])
+  @@index([type])
+}

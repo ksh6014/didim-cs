@@ -1,0 +1,18 @@
+{
+  "name": "CS 업무관리",
+  "short_name": "CS 업무",
+  "description": "CS 업무 및 A/S 현황 관리",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f7fc",
+  "theme_color": "#1473e6",
+  "icons": [
+    {
+      "src": "/cs-app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

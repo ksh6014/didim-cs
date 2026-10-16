@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1473e6" />
+    <title>CS 업무관리 모바일 설치</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f3f7fc; color: #17324f; }
+      main { width: min(680px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0; }
+      .brand { display: flex; gap: 14px; align-items: center; margin-bottom: 28px; }
+      .logo { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 15px; background: #1473e6; color: white; font-weight: 800; font-size: 20px; }
+      h1 { margin: 0; font-size: 25px; }
+      .subtitle { margin: 5px 0 0; color: #66809a; }
+      .card { margin-top: 18px; padding: 24px; border: 1px solid #dbe7f4; border-radius: 18px; background: white; box-shadow: 0 12px 36px rgba(36, 88, 145, .08); }
+      h2 { margin: 0 0 10px; font-size: 19px; }
+      p, li { line-height: 1.65; }
+      ol { padding-left: 22px; margin-bottom: 0; }
+      .button { display: block; margin-top: 18px; padding: 15px 18px; border-radius: 12px; background: #1473e6; color: white; font-weight: 700; text-align: center; text-decoration: none; }
+      .secondary { background: #eaf3ff; color: #1263c3; }
+      .note { font-size: 13px; color: #6f8499; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">
+        <div class="logo">CS</div>
+        <div><h1>CS 업무관리</h1><p class="subtitle">모바일 설치 안내</p></div>
+      </div>
+      <section class="card">
+        <h2>Android 설치</h2>
+        <p>APK 파일을 받은 뒤 브라우저의 안내에 따라 설치하세요.</p>
+        <a class="button" href="/downloads/CS-Workspace-v1.0.0.apk" download>Android APK 다운로드</a>
+        <p class="note">처음 설치할 때 Android에서 이 출처의 앱 설치 허용을 요청할 수 있습니다.</p>
+      </section>
+      <section class="card">
+        <h2>iPhone 설치</h2>
+        <ol>
+          <li>아래 버튼을 Safari에서 엽니다.</li>
+          <li>Safari 하단의 공유 버튼을 누릅니다.</li>
+          <li>‘홈 화면에 추가’를 선택합니다.</li>
+        </ol>
+        <a class="button secondary" href="/">CS 업무관리 열기</a>
+      </section>
+    </main>
+  </body>
+</html>
